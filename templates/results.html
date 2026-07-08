@@ -1,0 +1,564 @@
+{% extends "base.html" %}
+
+{% block title %}Results — {{ r.L_mm // 1000 }}m × {{ r.W_mm // 1000 }}m Conservatory Roof{% endblock %}
+
+{% block content %}
+
+<!-- Results header -->
+<section class="results-hero">
+  <div class="results-hero-inner">
+    <div class="results-hero-text">
+      <div class="results-badge">Calculation complete</div>
+      <h1 class="results-title">
+        {{ "%.2f"|format(r.L_mm / 1000) }} m × {{ "%.2f"|format(r.W_mm / 1000) }} m
+        &nbsp; {{ r.pitch_deg }}° pitch
+      </h1>
+      <p class="results-subtitle">
+        Ridge rise <strong>{{ r.rise_mm }} mm</strong> &nbsp;·&nbsp;
+        Ridge length <strong>{{ r.ridge_len_mm }} mm</strong> &nbsp;·&nbsp;
+        {{ r.n_common }} common rafters &nbsp;·&nbsp;
+        {{ r.n_jack_total }} jack rafters
+      </p>
+    </div>
+    <!-- Download form (re-posts the same inputs) -->
+    <form method="POST" action="/download-pdf" class="download-form">
+      <input type="hidden" name="length"   value="{{ length }}">
+      <input type="hidden" name="width"    value="{{ width }}">
+      <input type="hidden" name="pitch"    value="{{ pitch }}">
+      <input type="hidden" name="overhang" value="{{ overhang }}">
+      <input type="hidden" name="spacing"  value="{{ spacing }}">
+      <button type="submit" class="btn btn-download">
+        <span class="btn-icon">⬇</span>
+        Download PDF Manual
+      </button>
+    </form>
+  </div>
+</section>
+
+<div class="results-layout">
+
+  <!-- ── Tab navigation ─────────────────────────────────────────────────── -->
+  <nav class="tab-nav" id="tabNav">
+    <button class="tab-btn active" data-tab="summary">Summary</button>
+    <button class="tab-btn" data-tab="cutlist">Cut List</button>
+    <button class="tab-btn" data-tab="pods">Pods & OSB</button>
+    <button class="tab-btn" data-tab="order">Order</button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB: SUMMARY
+  ══════════════════════════════════════════════════════════════════════ -->
+  <div class="tab-panel active" id="tab-summary">
+
+    <div class="results-grid">
+
+      <!-- Key Dimensions -->
+      <div class="result-card">
+        <h3 class="card-title">Key Dimensions</h3>
+        <table class="data-table">
+          <tr><th>Parameter</th><th>Value</th></tr>
+          <tr><td>Building length</td><td><code>{{ r.L_mm }} mm</code></td></tr>
+          <tr><td>Building width</td><td><code>{{ r.W_mm }} mm</code></td></tr>
+          <tr><td>Roof pitch</td><td><code>{{ r.pitch_deg }}°</code></td></tr>
+          <tr><td>Ridge rise</td><td><code>{{ r.rise_mm }} mm</code></td></tr>
+          <tr><td>Ridge length (clear)</td><td><code>{{ r.ridge_len_mm }} mm</code></td></tr>
+          <tr><td>Ridge beam (cut length)</td><td><code>{{ r.ridge_full_mm }} mm</code></td></tr>
+          <tr><td>Common rafter — structural</td><td><code>{{ r.common_struct_mm }} mm</code></td></tr>
+          <tr><td>Common rafter — total (+ overhang)</td><td><code>{{ r.common_total_mm }} mm</code></td></tr>
+          <tr><td>Hip rafter — structural</td><td><code>{{ r.hip_struct_mm }} mm</code></td></tr>
+          <tr><td>Hip rafter — total</td><td><code>{{ r.hip_total_mm }} mm</code></td></tr>
+          <tr><td>Hip pitch</td><td><code>{{ r.hip_pitch_deg }}°</code></td></tr>
+        </table>
+      </div>
+
+      <!-- Rafter Counts -->
+      <div class="result-card">
+        <h3 class="card-title">Rafter Schedule</h3>
+        <table class="data-table">
+          <tr><th>Member</th><th>Qty</th><th>Length (mm)</th></tr>
+          <tr>
+            <td>Ridge beam</td>
+            <td><span class="qty-badge">1</span></td>
+            <td><code>{{ r.ridge_full_mm }}</code></td>
+          </tr>
+          <tr>
+            <td>Hip rafter</td>
+            <td><span class="qty-badge">4</span></td>
+            <td><code>{{ r.hip_total_mm }}</code></td>
+          </tr>
+          {% if r.n_common > 0 %}
+          <tr>
+            <td>Common rafter</td>
+            <td><span class="qty-badge">{{ r.n_common }}</span></td>
+            <td><code>{{ r.common_total_mm }}</code></td>
+          </tr>
+          {% endif %}
+          {% for jk in r.jack_lengths %}
+          <tr>
+            <td>Jack rafter (j={{ jk.j }})</td>
+            <td><span class="qty-badge">{{ jk.qty }}</span></td>
+            <td><code>{{ jk.total_mm }}</code></td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <!-- Angles -->
+      <div class="result-card">
+        <h3 class="card-title">Cut Angles</h3>
+        <table class="data-table">
+          <tr><th>Cut</th><th>Angle</th></tr>
+          <tr>
+            <td>Common/jack rafter plumb cut</td>
+            <td><span class="angle-badge">{{ r.plumb_cut_deg }}°</span></td>
+          </tr>
+          <tr>
+            <td>Bird's mouth seat cut</td>
+            <td><span class="angle-badge">{{ r.seat_cut_deg }}°</span></td>
+          </tr>
+          <tr>
+            <td>Hip rafter plumb cut</td>
+            <td><span class="angle-badge">{{ r.hip_plumb_deg }}°</span></td>
+          </tr>
+          <tr>
+            <td>Hip rafter backing bevel</td>
+            <td><span class="angle-badge">{{ r.hip_backing_deg }}°</span></td>
+          </tr>
+          <tr>
+            <td>Hip @ ridge — mitre</td>
+            <td><span class="angle-badge">{{ r.hip_ridge_mitre_deg }}°</span></td>
+          </tr>
+          <tr>
+            <td>Hip @ ridge — bevel</td>
+            <td><span class="angle-badge">{{ r.hip_ridge_bevel_deg }}°</span></td>
+          </tr>
+          <tr>
+            <td>Jack rafter side (cheek) cut</td>
+            <td><span class="angle-badge">{{ r.jack_side_cut_deg }}°</span></td>
+          </tr>
+          <tr>
+            <td>Bird's mouth depth</td>
+            <td><code>{{ r.bird_mouth_depth_mm }} mm</code></td>
+          </tr>
+          <tr>
+            <td>Bird's mouth width</td>
+            <td><code>{{ r.bird_mouth_width_mm }} mm</code></td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Wall plates -->
+      <div class="result-card">
+        <h3 class="card-title">Wall Plates</h3>
+        <table class="data-table">
+          <tr><th>Item</th><th>Length</th><th>Qty</th></tr>
+          <tr><td>Long wall plates (47×100 mm)</td><td><code>{{ r.wp_long_mm }} mm</code></td><td><span class="qty-badge">2</span></td></tr>
+          <tr><td>End wall plates (47×100 mm)</td><td><code>{{ r.wp_short_mm }} mm</code></td><td><span class="qty-badge">2</span></td></tr>
+        </table>
+        <p class="card-note">Total perimeter: <strong>{{ r.wp_total_mm // 1000 }} m</strong>. Use C16 treated timber, bedded on DPC.</p>
+      </div>
+
+    </div><!-- /results-grid -->
+
+    <!-- Angle diagrams legend -->
+    <div class="angle-explainer">
+      <h3>Angle Reference Diagrams</h3>
+      <div class="angle-diagrams">
+
+        <div class="angle-diagram-card">
+          <svg viewBox="0 0 160 130" class="angle-svg">
+            <!-- Ridge -->
+            <line x1="80" y1="20" x2="80" y2="20" />
+            <!-- Rafter side view -->
+            <line x1="20" y1="110" x2="140" y2="110" stroke="#ccc" stroke-width="1"/>
+            <polygon points="20,110 80,20 140,110" fill="none" stroke="#2d4a6b" stroke-width="1.5"/>
+            <!-- Plumb cut arc -->
+            <path d="M 80,20 L 80,45 A 25,25 0 0,0 67,30 Z" fill="#e67e22" opacity="0.3"/>
+            <text x="86" y="38" font-size="10" fill="#e67e22" font-weight="bold">{{ r.plumb_cut_deg }}°</text>
+            <!-- Seat cut arc -->
+            <path d="M 20,110 L 45,110 A 25,25 0 0,0 28,90 Z" fill="#27ae60" opacity="0.3"/>
+            <text x="28" y="108" font-size="9" fill="#27ae60">bird's mouth</text>
+            <!-- Labels -->
+            <text x="80" y="125" text-anchor="middle" font-size="9" fill="#666">Common Rafter (side view)</text>
+            <line x1="80" y1="20" x2="80" y2="110" stroke="#999" stroke-width="0.8" stroke-dasharray="3,2"/>
+            <text x="57" y="70" font-size="8" fill="#2d4a6b" transform="rotate(-{{ r.pitch_deg }},57,70)">{{ r.common_total_mm }}mm</text>
+          </svg>
+          <p>Common &amp; jack rafter — plumb cut {{ r.plumb_cut_deg }}°</p>
+        </div>
+
+        <div class="angle-diagram-card">
+          <svg viewBox="0 0 160 130" class="angle-svg">
+            <!-- Bird's mouth detail -->
+            <rect x="30" y="90" width="{{ r.bird_mouth_width_mm // 4 }}" height="20" fill="#e8d5b7" stroke="#888" stroke-width="1"/>
+            <text x="{{ 30 + r.bird_mouth_width_mm // 8 }}" y="104" text-anchor="middle" font-size="8" fill="#888">wall plate</text>
+            <!-- Rafter -->
+            <polygon points="20,70 100,20 120,70" fill="#d4a96a" stroke="#2d4a6b" stroke-width="1.5" opacity="0.8"/>
+            <!-- Depth arrow -->
+            <line x1="100" y1="20" x2="100" y2="50" stroke="#e67e22" stroke-width="1" stroke-dasharray="2,1"/>
+            <text x="105" y="38" font-size="8" fill="#e67e22">{{ r.bird_mouth_depth_mm }}mm</text>
+            <!-- Width arrow -->
+            <line x1="20" y1="80" x2="20" y2="80" stroke="#27ae60" stroke-width="1"/>
+            <text x="40" y="78" font-size="8" fill="#27ae60">{{ r.bird_mouth_width_mm }}mm wide</text>
+            <text x="80" y="125" text-anchor="middle" font-size="9" fill="#666">Bird's mouth detail</text>
+          </svg>
+          <p>Bird's mouth — {{ r.bird_mouth_depth_mm }} mm deep × {{ r.bird_mouth_width_mm }} mm wide</p>
+        </div>
+
+        <div class="angle-diagram-card">
+          <svg viewBox="0 0 160 130" class="angle-svg">
+            <!-- Hip rafter (plan view) -->
+            <line x1="20" y1="110" x2="140" y2="110" stroke="#ccc" stroke-width="1"/>
+            <line x1="20" y1="110" x2="20" y2="10" stroke="#ccc" stroke-width="1"/>
+            <line x1="20" y1="110" x2="100" y2="30" stroke="#2d4a6b" stroke-width="2.5"/>
+            <!-- 45° angle arc -->
+            <path d="M 50,110 A 30,30 0 0,0 20,80" fill="#e67e22" opacity="0.25"/>
+            <text x="40" y="95" font-size="9" fill="#e67e22">45°</text>
+            <!-- Hip pitch label -->
+            <text x="65" y="80" font-size="9" fill="#2d4a6b" transform="rotate(-42,65,80)">{{ r.hip_total_mm }}mm</text>
+            <text x="80" y="125" text-anchor="middle" font-size="9" fill="#666">Hip rafter (plan view)</text>
+            <text x="25" y="45" font-size="8" fill="#2d4a6b">Hip pitch</text>
+            <text x="25" y="55" font-size="8" fill="#e67e22">{{ r.hip_plumb_deg }}°</text>
+          </svg>
+          <p>Hip rafter — plumb cut {{ r.hip_plumb_deg }}°, backing {{ r.hip_backing_deg }}°</p>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /tab-summary -->
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB: CUT LIST
+  ══════════════════════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-cutlist">
+
+    <div class="toolbar">
+      <input type="text" id="cutListSearch" placeholder="🔍  Filter cut list…" class="search-input" />
+      <button class="btn btn-small" onclick="sortTable('cutListTable', 3)">Sort by length</button>
+      <button class="btn btn-small" onclick="sortTable('cutListTable', 4)">Sort by qty</button>
+      <button class="btn btn-small" onclick="window.print()">🖨 Print</button>
+    </div>
+
+    <div class="table-scroll">
+    <table class="cut-table" id="cutListTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Item</th>
+          <th>Section</th>
+          <th>Length (mm)</th>
+          <th>Qty</th>
+          <th>Cut notes</th>
+          <th>Additional notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in r.cut_list %}
+        <tr>
+          <td class="col-num">{{ loop.index }}</td>
+          <td class="col-item">{{ item.item }}</td>
+          <td class="col-section"><code>{{ item.section }}</code></td>
+          <td class="col-length"><strong>{{ item.length }}</strong></td>
+          <td class="col-qty"><span class="qty-badge">{{ item.qty }}</span></td>
+          <td class="col-cuts">{{ item.cuts }}</td>
+          <td class="col-notes">{{ item.notes }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+
+    <p class="table-footer-note">
+      All lengths in millimetres. Add 5 mm to each piece for saw-kerf and machining tolerance.
+      Timber grade C24 unless noted. Mark each piece with its item number and position before cutting.
+    </p>
+
+  </div><!-- /tab-cutlist -->
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB: PODS & OSB
+  ══════════════════════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-pods">
+
+    <div class="results-grid">
+
+      <!-- Pod specification -->
+      <div class="result-card span-2">
+        <h3 class="card-title">Pod Specification</h3>
+        <div class="pod-spec-grid">
+          <div class="pod-spec-item">
+            <span class="spec-value">{{ r.pod_width_mm }} mm</span>
+            <span class="spec-label">Pod outer width</span>
+          </div>
+          <div class="pod-spec-item">
+            <span class="spec-value">{{ r.pod_total_depth_mm }} mm</span>
+            <span class="spec-label">Total depth</span>
+          </div>
+          <div class="pod-spec-item">
+            <span class="spec-value">{{ r.insul_depth_mm }} mm</span>
+            <span class="spec-label">PIR insulation</span>
+          </div>
+          <div class="pod-spec-item">
+            <span class="spec-value">{{ r.air_gap_mm }} mm</span>
+            <span class="spec-label">Ventilated air gap</span>
+          </div>
+          <div class="pod-spec-item">
+            <span class="spec-value">18 mm × 2</span>
+            <span class="spec-label">OSB faces</span>
+          </div>
+          <div class="pod-spec-item">
+            <span class="spec-value">47 × {{ r.frame_depth_mm }} mm</span>
+            <span class="spec-label">Frame section</span>
+          </div>
+        </div>
+
+        <!-- Pod stack diagram -->
+        <div class="pod-stack-diagram">
+          <div class="pod-layer outer-osb">OSB/3 — 18 mm (outer deck, structural)</div>
+          <div class="pod-layer air-gap">Air gap — {{ r.air_gap_mm }} mm (ventilated to eave)</div>
+          <div class="pod-layer insulation">PIR insulation — {{ r.insul_depth_mm }} mm (e.g. Kingspan TP10)</div>
+          <div class="pod-layer inner-osb">OSB/3 — 18 mm (inner face, decorated or lined)</div>
+          <div class="pod-arrow">⟵ {{ r.pod_width_mm }} mm between rafters ⟶</div>
+        </div>
+      </div>
+
+      <!-- Pod sizes -->
+      <div class="result-card">
+        <h3 class="card-title">Pod Size Schedule</h3>
+        <table class="data-table">
+          <tr>
+            <th>Pod type</th><th>Width (mm)</th><th>Length (mm)</th><th>Qty</th>
+          </tr>
+          <tr>
+            <td>Common pod</td>
+            <td><code>{{ r.pod_width_mm }}</code></td>
+            <td><code>{{ r.common_pod_l_mm }}</code></td>
+            <td><span class="qty-badge">{{ r.n_common_pods }}</span></td>
+          </tr>
+          {% for jp in r.jack_pods %}
+          <tr>
+            <td>Jack pod (j={{ jp.j }})</td>
+            <td><code>{{ r.pod_width_mm }}</code></td>
+            <td><code>{{ jp.l_mm }}</code></td>
+            <td><span class="qty-badge">{{ jp.qty }}</span></td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <!-- OSB summary -->
+      <div class="result-card">
+        <h3 class="card-title">OSB Summary</h3>
+        <table class="data-table">
+          <tr><td>Sheet size</td><td><strong>{{ r.osb_sheet_label }}</strong></td></tr>
+          <tr><td>Strips per sheet ({{ r.osb_pod_w_mm }} mm wide)</td>
+              <td><strong>{{ r.osb_strips_per_sheet }}</strong></td></tr>
+          <tr><td>Total OSB panels needed</td>
+              <td><strong>{{ r.osb_total_panels }}</strong></td></tr>
+          <tr><td>Net OSB area</td>
+              <td><strong>{{ r.osb_total_area_m2 }} m²</strong></td></tr>
+          <tr>
+            <td>Sheets to buy</td>
+            <td>
+              <span class="highlight-value">{{ r.osb_sheets_required }} sheets</span>
+            </td>
+          </tr>
+          <tr><td>Area purchased</td>
+              <td><strong>{{ r.osb_bought_area_m2 }} m²</strong></td></tr>
+          <tr><td>Estimated waste</td>
+              <td><strong>{{ r.osb_waste_pct }} %</strong></td></tr>
+        </table>
+      </div>
+
+    </div><!-- /results-grid -->
+
+    <!-- OSB Cutting Schedule -->
+    <div class="result-card">
+      <h3 class="card-title">OSB Cutting Schedule (sheet by sheet)</h3>
+      <p class="card-note">
+        First, rip all strips at <strong>{{ r.osb_pod_w_mm }} mm</strong> wide (from the 1220 mm dimension).
+        Then crosscut each strip to the panel lengths below.
+        "Offcut" column shows the waste per strip in mm.
+      </p>
+      <div class="table-scroll">
+      <table class="cut-table">
+        <thead>
+          <tr>
+            <th>Sheet</th>
+            <th>Strip</th>
+            <th>Cut panels (mm)</th>
+            <th>Offcut (mm)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sheet in r.osb_cutting_schedule %}
+            {% for strip in sheet.strips %}
+            <tr>
+              <td>{{ sheet.sheet }}</td>
+              <td>{{ strip.strip }}</td>
+              <td>{{ strip.panels | join(' + ') }}</td>
+              <td class="{% if strip.waste_mm > 200 %}waste-ok{% else %}waste-low{% endif %}">
+                {{ strip.waste_mm }}
+              </td>
+            </tr>
+            {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+  </div><!-- /tab-pods -->
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB: ORDER SUMMARY
+  ══════════════════════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-order">
+
+    <div class="result-card">
+      <h3 class="card-title">Timber Order Summary</h3>
+      <p class="card-note">
+        Net linear metres required per section, plus a 10 % waste / cutting allowance.
+        Lengths are typical merchant stock lengths — round up to the nearest available length.
+      </p>
+      <table class="cut-table">
+        <thead>
+          <tr>
+            <th>Section / Grade</th>
+            <th>Net (m)</th>
+            <th>Order +10% (m)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in r.timber_totals %}
+          <tr>
+            <td><code>{{ row.section }}</code></td>
+            <td>{{ row.total_lm }}</td>
+            <td><strong>{{ row.order_lm }}</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="result-card">
+      <h3 class="card-title">Other Materials (not in timber totals)</h3>
+      <table class="data-table">
+        <tr><th>Item</th><th>Qty</th><th>Notes</th></tr>
+        <tr>
+          <td>OSB/3 18 mm sheets</td>
+          <td><strong>{{ r.osb_sheets_required }} sheets</strong></td>
+          <td>{{ r.osb_sheet_label }} — for pod faces</td>
+        </tr>
+        <tr>
+          <td>PIR insulation (100 mm)</td>
+          <td><strong>≈ {{ r.osb_total_area_m2 / 2 | round(1) }} m²</strong></td>
+          <td>One face per pod; e.g. Kingspan TP10, Recticel, or similar</td>
+        </tr>
+        <tr>
+          <td>Breathable roofing membrane</td>
+          <td><strong>≈ {{ (r.L_mm / 1000 * r.W_mm / 1000 * 1.3) | round(1) }} m²</strong></td>
+          <td>Add 30 % for laps and waste; BS 4016 class 1F</td>
+        </tr>
+        <tr>
+          <td>Counter-battens 25×50 mm</td>
+          <td><strong>≈ {{ ((r.n_common + r.n_jack_total + 4) * r.common_total_mm / 1000 * 1.1) | round(1) }} m</strong></td>
+          <td>One per rafter, full rafter length; pressure-treated</td>
+        </tr>
+        <tr>
+          <td>Tiling battens 25×50 mm</td>
+          <td>To suit tile/slate gauge</td>
+          <td>Calculate from gauge × plan area</td>
+        </tr>
+        <tr>
+          <td>M10 × 150 mm coach screws</td>
+          <td>≈ {{ (r.wp_total_mm / 600) | round | int }} off</td>
+          <td>Wall-plate anchors at 600 mm c/c</td>
+        </tr>
+        <tr>
+          <td>Joist hangers / framing anchors</td>
+          <td>{{ r.n_common + r.n_jack_total + 4 }} sets</td>
+          <td>One per rafter foot</td>
+        </tr>
+        <tr>
+          <td>DPC strip (100 mm wide)</td>
+          <td>{{ (r.wp_total_mm / 1000) | round(1) }} m</td>
+          <td>Below all wall plates</td>
+        </tr>
+        <tr>
+          <td>Construction adhesive (tubes)</td>
+          <td>≈ {{ r.osb_total_panels | round | int // 3 + 2 }} tubes</td>
+          <td>For OSB faces to pod frames</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="result-card">
+      <h3 class="card-title">Download & Print</h3>
+      <p class="card-note">The PDF manual contains all tables above plus annotated diagrams and full phase-by-phase assembly instructions.</p>
+      <form method="POST" action="/download-pdf" style="display:inline;">
+        <input type="hidden" name="length"   value="{{ length }}">
+        <input type="hidden" name="width"    value="{{ width }}">
+        <input type="hidden" name="pitch"    value="{{ pitch }}">
+        <input type="hidden" name="overhang" value="{{ overhang }}">
+        <input type="hidden" name="spacing"  value="{{ spacing }}">
+        <button type="submit" class="btn btn-download">⬇ Download PDF Manual</button>
+      </form>
+      <a href="/" class="btn btn-secondary" style="margin-left:12px;">← New Calculation</a>
+    </div>
+
+  </div><!-- /tab-order -->
+
+</div><!-- /results-layout -->
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Tab switching
+  const tabBtns   = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      tabBtns.forEach(b => b.classList.remove('active'));
+      tabPanels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + target).classList.add('active');
+    });
+  });
+
+  // Cut-list filter
+  const search = document.getElementById('cutListSearch');
+  if (search) {
+    search.addEventListener('input', () => {
+      const val = search.value.toLowerCase();
+      document.querySelectorAll('#cutListTable tbody tr').forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(val) ? '' : 'none';
+      });
+    });
+  }
+
+  // Table sort (by column index)
+  function sortTable(tableId, colIndex) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    const tbody = table.querySelector('tbody');
+    const rows  = Array.from(tbody.querySelectorAll('tr'));
+    const asc   = table.dataset.sortCol === String(colIndex) && table.dataset.sortDir !== 'asc';
+    table.dataset.sortCol = colIndex;
+    table.dataset.sortDir = asc ? 'asc' : 'desc';
+
+    rows.sort((a, b) => {
+      const va = parseFloat(a.cells[colIndex]?.textContent) || a.cells[colIndex]?.textContent || '';
+      const vb = parseFloat(b.cells[colIndex]?.textContent) || b.cells[colIndex]?.textContent || '';
+      return asc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+    rows.forEach(r => tbody.appendChild(r));
+  }
+</script>
+{% endblock %}
