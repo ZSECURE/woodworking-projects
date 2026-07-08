@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Smoke-test app startup
+        run: |
+          python - <<'EOF'
+          from app import app
+          client = app.test_client()
+
+          # Homepage loads
+          resp = client.get("/")
+          assert resp.status_code == 200, f"GET / returned {resp.status_code}"
+
+          # Calculate returns results for valid inputs
+          resp = client.post("/calculate", data={
+              "length": "4.0",
+              "width": "3.0",
+              "pitch": "30",
+              "overhang": "300",
+              "spacing": "600",
+          })
+          assert resp.status_code == 200, f"POST /calculate returned {resp.status_code}"
+
+          # Calculate returns validation errors for missing inputs
+          resp = client.post("/calculate", data={})
+          assert resp.status_code == 200, f"POST /calculate (empty) returned {resp.status_code}"
+          assert b"required" in resp.data.lower(), "Expected validation error message in response"
+
+          print("All smoke tests passed.")
+          EOF
