@@ -32,14 +32,16 @@ jobs:
       - name: Start Flask app
         run: |
           nohup python app.py > /tmp/flask.log 2>&1 &
-          echo "Flask PID: $!"
+          FLASK_PID=$!
+          echo "Flask PID: $FLASK_PID"
           # Wait until the app is accepting connections
-          for i in $(seq 1 15); do
+          MAX_RETRIES=15
+          for i in $(seq 1 $MAX_RETRIES); do
             if curl -sf http://localhost:5000/ > /dev/null 2>&1; then
               echo "Flask app is up on port 5000"
               exit 0
             fi
-            echo "Waiting for Flask... ($i)"
+            echo "Waiting for Flask... ($i/$MAX_RETRIES)"
             sleep 1
           done
           echo "Flask did not start in time. Log output:"
