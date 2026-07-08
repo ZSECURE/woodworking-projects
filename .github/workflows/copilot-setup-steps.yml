@@ -1,0 +1,47 @@
+name: "Copilot Setup Steps"
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Start Flask app
+        run: |
+          nohup python app.py > /tmp/flask.log 2>&1 &
+          echo "Flask PID: $!"
+          # Wait until the app is accepting connections
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:5000/ > /dev/null 2>&1; then
+              echo "Flask app is up on port 5000"
+              exit 0
+            fi
+            echo "Waiting for Flask... ($i)"
+            sleep 1
+          done
+          echo "Flask did not start in time. Log output:"
+          cat /tmp/flask.log
+          exit 1
