@@ -28,6 +28,7 @@ Start Nginx on port 80 only (needed for the ACME challenge):
 
 ```bash
 docker compose up -d nginx
+# Replace YOUR_DOMAIN and you@example.com with your actual values in the command below:
 docker compose run --rm certbot certonly \
   --webroot --webroot-path /var/www/certbot \
   --email you@example.com \
