@@ -258,8 +258,8 @@ def _cross_section_sketch(r: dict, width: float = 120 * mm) -> Drawing:
 
     # Walls (left and right)
     wall_h = pr(rise * 0.15)  # small wall height for illustration
-    d.add(Rect(px(0) - 4, ground_y - wall_h + ground_y - ground_y,
-               8, wall_h - ground_y + ground_y,
+    d.add(Rect(px(0) - 4, ground_y - wall_h,
+               8, wall_h,
                fillColor=C_GREY, strokeColor=None))
 
     # Left rafter (from left eave to ridge)

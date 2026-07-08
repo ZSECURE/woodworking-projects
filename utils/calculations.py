@@ -329,7 +329,7 @@ class ConservatoryRoof:
 
         # Frame timber per pod (two long sides + two short ends)
         # Long sides: 47 × 150 × pod_length  (2 per pod)
-        # Short ends:  47 × 150 × (pod_w − 2×47)  (2 per pod, let inside ends)
+        # Short ends:  47 × 150 × (pod_w − 2×47)  (2 per pod, fit inside ends)
         frame_depth = INSUL_D + AIR_GAP    # = 150 mm  ← matches RAF_D exactly
 
         pod_total_depth = OSB_T + frame_depth + OSB_T
