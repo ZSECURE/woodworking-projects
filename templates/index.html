@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Conservatory Timber Roof Calculator{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">Professional Timber Roof Design</div>
+    <h1 class="hero-title">
+      Conservatory<br />
+      <span class="hero-title-accent">Solid Timber Roof</span><br />
+      Calculator
+    </h1>
+    <p class="hero-subtitle">
+      Enter your conservatory dimensions to generate a complete structural
+      cut list, assembly manual, and optimised OSB cutting schedule — ready
+      to take to the timber merchant.
+    </p>
+    <div class="hero-features">
+      <div class="feature-pill">✓ Ridge, hips &amp; jack rafters</div>
+      <div class="feature-pill">✓ Insulated pod cassettes</div>
+      <div class="feature-pill">✓ OSB cutting optimisation</div>
+      <div class="feature-pill">✓ PDF instruction manual</div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="roof-diagram">
+      <svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" class="roof-svg">
+        <!-- Building base -->
+        <rect x="40" y="120" width="240" height="80" fill="#e8f0fe" stroke="#2d4a6b" stroke-width="1.5"/>
+        <!-- Roof outline -->
+        <polygon points="40,120 160,40 280,120" fill="#2d4a6b" opacity="0.15" stroke="#2d4a6b" stroke-width="1.5"/>
+        <!-- Ridge -->
+        <line x1="120" y1="40" x2="200" y2="40" stroke="#e67e22" stroke-width="3" stroke-linecap="round"/>
+        <!-- Hips -->
+        <line x1="40" y1="120" x2="120" y2="40" stroke="#2d4a6b" stroke-width="2"/>
+        <line x1="280" y1="120" x2="200" y2="40" stroke="#2d4a6b" stroke-width="2"/>
+        <line x1="40" y1="120" x2="120" y2="40" stroke="#2d4a6b" stroke-width="2"/>
+        <!-- Common rafters (dashed) -->
+        <line x1="130" y1="120" x2="130" y2="40" stroke="#27ae60" stroke-width="1" stroke-dasharray="4,3" opacity="0.8"/>
+        <line x1="150" y1="120" x2="150" y2="40" stroke="#27ae60" stroke-width="1" stroke-dasharray="4,3" opacity="0.8"/>
+        <line x1="170" y1="120" x2="170" y2="40" stroke="#27ae60" stroke-width="1" stroke-dasharray="4,3" opacity="0.8"/>
+        <line x1="190" y1="120" x2="190" y2="40" stroke="#27ae60" stroke-width="1" stroke-dasharray="4,3" opacity="0.8"/>
+        <!-- Jack rafters -->
+        <line x1="60" y1="120" x2="60" y2="100" stroke="#f39c12" stroke-width="1" stroke-dasharray="3,2" opacity="0.8"/>
+        <line x1="80" y1="120" x2="80" y2="80" stroke="#f39c12" stroke-width="1" stroke-dasharray="3,2" opacity="0.8"/>
+        <line x1="100" y1="120" x2="100" y2="60" stroke="#f39c12" stroke-width="1" stroke-dasharray="3,2" opacity="0.8"/>
+        <line x1="220" y1="120" x2="220" y2="60" stroke="#f39c12" stroke-width="1" stroke-dasharray="3,2" opacity="0.8"/>
+        <line x1="240" y1="120" x2="240" y2="80" stroke="#f39c12" stroke-width="1" stroke-dasharray="3,2" opacity="0.8"/>
+        <line x1="260" y1="120" x2="260" y2="100" stroke="#f39c12" stroke-width="1" stroke-dasharray="3,2" opacity="0.8"/>
+        <!-- Labels -->
+        <text x="160" y="36" text-anchor="middle" font-size="9" fill="#e67e22" font-weight="bold">RIDGE</text>
+        <text x="80" y="75" text-anchor="middle" font-size="8" fill="#2d4a6b" transform="rotate(-53,80,75)">HIP</text>
+        <text x="155" y="80" text-anchor="middle" font-size="8" fill="#27ae60">RAFTER</text>
+        <!-- Dimension arrow -->
+        <line x1="40" y1="210" x2="280" y2="210" stroke="#666" stroke-width="1"/>
+        <text x="160" y="218" text-anchor="middle" font-size="9" fill="#666">LENGTH (L)</text>
+        <line x1="295" y1="120" x2="295" y2="200" stroke="#666" stroke-width="1"/>
+        <text x="310" y="165" text-anchor="middle" font-size="9" fill="#666" transform="rotate(90,310,165)">WIDTH (W)</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- Error messages -->
+{% if errors %}
+<div class="error-banner">
+  <div class="error-icon">⚠</div>
+  <div class="error-list">
+    {% for e in errors %}<p>{{ e }}</p>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Calculator Form -->
+<section class="form-section">
+  <div class="form-card">
+    <div class="form-card-header">
+      <h2>Enter Conservatory Dimensions</h2>
+      <p>All measurements are in metres for dimensions, degrees for angles, and millimetres for smaller values.</p>
+    </div>
+
+    <form id="roofForm" method="POST" action="/calculate">
+
+      <!-- Dimensions group -->
+      <div class="form-group-title">
+        <span class="group-number">1</span> Building Dimensions
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label for="length">
+            Conservatory Length (m)
+            <span class="tooltip" data-tip="The longer dimension of the conservatory floor plan.">?</span>
+          </label>
+          <div class="input-with-unit">
+            <input type="number" id="length" name="length" step="0.01" min="1" max="20"
+                   placeholder="e.g. 5.0" required
+                   value="{{ form.length if form else '' }}" />
+            <span class="unit">m</span>
+          </div>
+          <span class="field-hint">Minimum 1 m. If you enter the shorter value here it will be auto-swapped.</span>
+        </div>
+
+        <div class="form-field">
+          <label for="width">
+            Conservatory Width (m)
+            <span class="tooltip" data-tip="The shorter dimension (depth from the house wall).">?</span>
+          </label>
+          <div class="input-with-unit">
+            <input type="number" id="width" name="width" step="0.01" min="1" max="15"
+                   placeholder="e.g. 3.0" required
+                   value="{{ form.width if form else '' }}" />
+            <span class="unit">m</span>
+          </div>
+          <span class="field-hint">Minimum 1 m.</span>
+        </div>
+      </div>
+
+      <!-- Roof spec group -->
+      <div class="form-group-title">
+        <span class="group-number">2</span> Roof Specification
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label for="pitch">
+            Roof Pitch (°)
+            <span class="tooltip" data-tip="Slope angle from horizontal. Common conservatory pitches: 25°–35°. Minimum 10°, maximum 60°.">?</span>
+          </label>
+          <div class="input-with-unit">
+            <input type="number" id="pitch" name="pitch" step="0.5" min="10" max="60"
+                   placeholder="30" value="{{ form.pitch if form else '30' }}" />
+            <span class="unit">°</span>
+          </div>
+          <div class="pitch-slider-wrap">
+            <input type="range" id="pitchSlider" min="10" max="60" step="0.5" value="{{ form.pitch if form else '30' }}" class="pitch-slider" />
+            <span class="pitch-visual" id="pitchLabel">30°</span>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="overhang">
+            Eave Overhang (mm)
+            <span class="tooltip" data-tip="Horizontal distance the rafter tail extends beyond the wall plate. Typically 200–400 mm.">?</span>
+          </label>
+          <div class="input-with-unit">
+            <input type="number" id="overhang" name="overhang" step="10" min="0" max="600"
+                   placeholder="300" value="{{ form.overhang if form else '300' }}" />
+            <span class="unit">mm</span>
+          </div>
+          <span class="field-hint">Typical: 200–350 mm.</span>
+        </div>
+
+        <div class="form-field">
+          <label for="spacing">
+            Rafter Spacing (mm)
+            <span class="tooltip" data-tip="Centre-to-centre distance between adjacent rafters. 400 mm for tiles, 600 mm common. Range: 300–900 mm.">?</span>
+          </label>
+          <div class="input-with-unit">
+            <input type="number" id="spacing" name="spacing" step="50" min="300" max="900"
+                   placeholder="600" value="{{ form.spacing if form else '600' }}" />
+            <span class="unit">mm</span>
+          </div>
+          <span class="field-hint">Typical: 400–600 mm centres.</span>
+        </div>
+      </div>
+
+      <!-- Live preview -->
+      <div class="live-preview" id="livePreview">
+        <div class="preview-title">Live Estimate</div>
+        <div class="preview-grid">
+          <div class="preview-item"><span id="prev-rise">—</span><small>Rise (mm)</small></div>
+          <div class="preview-item"><span id="prev-ridge">—</span><small>Ridge length (mm)</small></div>
+          <div class="preview-item"><span id="prev-cr">—</span><small>Common rafter (mm)</small></div>
+          <div class="preview-item"><span id="prev-hip">—</span><small>Hip rafter (mm)</small></div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="calcBtn">
+          <span class="btn-icon">⚙</span>
+          Calculate &amp; Generate Cut List
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="info-section">
+  <h2 class="section-title">How It Works</h2>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-icon">📐</div>
+      <h3>Accurate Geometry</h3>
+      <p>All rafter lengths and angles are calculated from first principles using trigonometry — including hip pitch, backing bevel, and jack-rafter side cuts.</p>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">🧱</div>
+      <h3>Insulated Pods</h3>
+      <p>The calculator designs OSB cassette pods containing 100 mm PIR insulation plus a 50 mm ventilated air gap, for a warm, condensation-free roof.</p>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">🪵</div>
+      <h3>Optimised OSB Cutting</h3>
+      <p>A bin-packing algorithm minimises waste when cutting pods from standard 2440 × 1220 mm sheets, giving you a sheet-by-sheet cutting schedule.</p>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">📄</div>
+      <h3>PDF Manual</h3>
+      <p>Download a complete A4 instruction manual with annotated diagrams, step-by-step assembly phases, cut angles, and a final inspection checklist.</p>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Sync pitch slider ↔ input
+  const pitchInput  = document.getElementById('pitch');
+  const pitchSlider = document.getElementById('pitchSlider');
+  const pitchLabel  = document.getElementById('pitchLabel');
+
+  function syncPitch(val) {
+    pitchInput.value  = val;
+    pitchSlider.value = val;
+    pitchLabel.textContent = val + '°';
+    updatePreview();
+  }
+  pitchInput.addEventListener('input',  () => syncPitch(pitchInput.value));
+  pitchSlider.addEventListener('input', () => syncPitch(pitchSlider.value));
+
+  // Live preview calculations
+  function updatePreview() {
+    const L = parseFloat(document.getElementById('length').value) || 0;
+    const W = parseFloat(document.getElementById('width').value)  || 0;
+    const pitch = parseFloat(pitchInput.value) || 30;
+    const ovhng = parseFloat(document.getElementById('overhang').value) || 300;
+
+    if (L < 1 || W < 1) return;
+
+    const rad   = pitch * Math.PI / 180;
+    const halfW = Math.max(L, W) * 1000 / 2;  // use longer dim
+    const rise  = Math.round(halfW * Math.tan(rad));
+    const cr    = Math.round((halfW + ovhng) / Math.cos(rad));
+    const ridge = Math.round(Math.abs(L - W) * 1000);
+    const hipPlan = halfW * Math.sqrt(2);
+    const hipPitch = Math.atan(Math.tan(rad) / Math.sqrt(2));
+    const hip = Math.round(hipPlan / Math.cos(hipPitch) + ovhng * Math.sqrt(2) / Math.cos(hipPitch));
+
+    document.getElementById('prev-rise').textContent  = rise.toLocaleString();
+    document.getElementById('prev-ridge').textContent = ridge.toLocaleString();
+    document.getElementById('prev-cr').textContent    = cr.toLocaleString();
+    document.getElementById('prev-hip').textContent   = hip.toLocaleString();
+  }
+
+  ['length','width','overhang','spacing'].forEach(id =>
+    document.getElementById(id).addEventListener('input', updatePreview)
+  );
+  updatePreview();
+</script>
+{% endblock %}
